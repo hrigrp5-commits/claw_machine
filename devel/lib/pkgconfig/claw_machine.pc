@@ -1,0 +1,1 @@
+/home/hri25-group5/ros/devel/.private/claw_machine/lib/pkgconfig/claw_machine.pc

@@ -1,0 +1,7 @@
+\subsubsection usage Usage
+\verbatim
+<node name="dynamic_tutorials" pkg="motion_demo" type="dynamic_tutorials">
+  <param name="velocity_scaling" type="double" value="0.3" />
+</node>
+\endverbatim
+

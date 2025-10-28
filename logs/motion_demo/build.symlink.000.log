@@ -1,0 +1,12 @@
+Symlinking /home/hri25-group5/ros/devel/include/motion_demo/VelocityConfig.h
+Symlinking /home/hri25-group5/ros/devel/share/motion_demo/cmake/motion_demoConfig.cmake
+Symlinking /home/hri25-group5/ros/devel/share/motion_demo/cmake/motion_demoConfig-version.cmake
+Symlinking /home/hri25-group5/ros/devel/share/motion_demo/docs/VelocityConfig.wikidoc
+Symlinking /home/hri25-group5/ros/devel/share/motion_demo/docs/VelocityConfig-usage.dox
+Symlinking /home/hri25-group5/ros/devel/share/motion_demo/docs/VelocityConfig.dox
+Symlinking /home/hri25-group5/ros/devel/lib/motion_demo/move_randomly_in_grid
+Symlinking /home/hri25-group5/ros/devel/lib/motion_demo/cmake.lock
+Symlinking /home/hri25-group5/ros/devel/lib/pkgconfig/motion_demo.pc
+Symlinking /home/hri25-group5/ros/devel/lib/python3/dist-packages/motion_demo/__init__.py
+Symlinking /home/hri25-group5/ros/devel/lib/python3/dist-packages/motion_demo/cfg/__init__.py
+Symlinking /home/hri25-group5/ros/devel/lib/python3/dist-packages/motion_demo/cfg/VelocityConfig.py

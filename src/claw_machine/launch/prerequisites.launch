@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find cu_panda_bringup)/launch/hardware.launch">
+    <arg name="rviz" value="false" />
+  </include>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find claw_machine)/config/arm_config.rviz" />
+</launch>

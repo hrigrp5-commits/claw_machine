@@ -1,0 +1,1 @@
+/home/hri25-group5/ros/devel/.private/claw_machine/share/claw_machine/cmake/claw_machineConfig.cmake

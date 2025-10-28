@@ -1,0 +1,8 @@
+prefix=/home/hri25-group5/ros/install
+
+Name: motion_demo
+Description: Description of motion_demo
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: 
+Requires: 

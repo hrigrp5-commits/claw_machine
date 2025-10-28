@@ -1,0 +1,4 @@
+[100%] [34m[1mGenerating dynamic reconfigure files from cfg/Velocity.cfg: /home/hri25-group5/ros/devel/.private/motion_demo/include/motion_demo/VelocityConfig.h /home/hri25-group5/ros/devel/.private/motion_demo/lib/python3/dist-packages/motion_demo/cfg/VelocityConfig.py[0m
+Generating reconfiguration files for Velocity in motion_demo
+Wrote header file in /home/hri25-group5/ros/devel/.private/motion_demo/include/motion_demo/VelocityConfig.h
+[100%] Built target motion_demo_gencfg

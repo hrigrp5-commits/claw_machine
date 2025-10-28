@@ -1,0 +1,8 @@
+prefix=/home/hri25-group5/ros/install
+
+Name: claw_machine
+Description: Description of claw_machine
+Version: 0.0.0
+Cflags: 
+Libs: 
+Requires: 

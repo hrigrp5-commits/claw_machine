@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/hri25-group5/ros/devel/.private/claw_machine/setup.sh

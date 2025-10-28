@@ -1,0 +1,5 @@
+claw_machine
+/home/hri25-group5/ros/devel/.private/claw_machine/cmake.lock /home/hri25-group5/ros/devel/./cmake.lock
+/home/hri25-group5/ros/devel/.private/claw_machine/share/claw_machine/cmake/claw_machineConfig-version.cmake /home/hri25-group5/ros/devel/share/claw_machine/cmake/claw_machineConfig-version.cmake
+/home/hri25-group5/ros/devel/.private/claw_machine/share/claw_machine/cmake/claw_machineConfig.cmake /home/hri25-group5/ros/devel/share/claw_machine/cmake/claw_machineConfig.cmake
+/home/hri25-group5/ros/devel/.private/claw_machine/lib/pkgconfig/claw_machine.pc /home/hri25-group5/ros/devel/lib/pkgconfig/claw_machine.pc

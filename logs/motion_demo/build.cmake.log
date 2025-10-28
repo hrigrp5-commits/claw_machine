@@ -1,0 +1,21 @@
+Not searching for unused variables given on the command line.
+[36m--[0m Using CATKIN_DEVEL_PREFIX: /home/hri25-group5/ros/devel/.private/motion_demo
+[36m--[0m Using CMAKE_PREFIX_PATH: /home/hri25-group5/ros/devel;/opt/ros/cu;/opt/ros/one
+[36m--[0m This workspace overlays: /home/hri25-group5/ros/devel;/opt/ros/cu;/opt/ros/one
+[36m--[0m Found PythonInterp: /usr/bin/python3 (found suitable version "3.11.2", minimum required is "3")
+[36m--[0m Using PYTHON_EXECUTABLE: /usr/bin/python3
+[36m--[0m Using Debian Python package layout
+[36m--[0m Using empy: /usr/bin/empy
+[36m--[0m Using CATKIN_ENABLE_TESTING: ON
+[36m--[0m Call enable_testing()
+[36m--[0m Using CATKIN_TEST_RESULTS_DIR: /home/hri25-group5/ros/build/motion_demo/test_results
+[36m--[0m GTest is available
+[36m--[0m GMock is available
+[36m--[0m nosetests not found, Python tests can not be run (try installing package 'python3-nose')
+[36m--[0m catkin 0.8.10
+[36m--[0m BUILD_SHARED_LIBS is on
+[36m--[0m Found PythonInterp: /usr/bin/python3 (found version "3.11.2")
+[36m--[0m Installing devel-space wrapper /home/hri25-group5/ros/src/motion_demo-main/scripts/move_randomly_in_grid to /home/hri25-group5/ros/devel/.private/motion_demo/lib/motion_demo
+[36m--[0m Configuring done
+[36m--[0m Generating done
+[36m--[0m Build files have been written to: /home/hri25-group5/ros/build/motion_demo

@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+
+from geometry_msgs.msg import PoseStamped, Quaternion, Vector3, Point, Pose, Quaternion
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
+from moveit_commander import MoveGroupCommander
+import math
+import numpy as np
+import random
+import rospy
+import tf.transformations as tft
+import termios
+import tty
+import select
+import sys
+
+def wait_for_char():
+    """Waits for a single key press and returns the character."""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+    except KeyboardInterrupt:
+        return "q"
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    print(ch)  # echo the pressed key
+    return ch
+
+def main():
+
+    rospy.init_node('teleop_grid')
+
+    pose_pub = rospy.Publisher('/motion/target', PoseStamped, queue_size=1, latch=True)
+    visualization_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=1, latch=True)
+
+    MGC = MoveGroupCommander("arm")
+    MGC.set_max_velocity_scaling_factor(0.3)
+
+    # start in the intended joint manifold
+    MGC.set_joint_value_target([-1.1795774549747768, -0.6763546984921459, 2.4263381437000473, -2.263770049458289, 0.9641311592823928, 2.631078570464189, 1.2334547503908793])
+
+    while not MGC.go(wait=True):
+        rospy.logerr("Failed to reach initial pose 'home', retrying...")
+        rospy.sleep(3.0)
+        if rospy.is_shutdown():
+            return
+
+    pose = PoseStamped()
+    pose.header.frame_id = "panda_hand_tcp"
+    pose.pose.position.x = 0
+    pose.pose.position.y = -0.05
+    pose.pose.orientation.w = 1
+
+    while not rospy.is_shutdown():
+        ch = wait_for_char()
+        if ch == 'q':
+            return
+        elif ch == 'a':
+            pose.pose.position.x = 0
+            pose.pose.position.y = 0.05
+        elif ch == 'w':
+            pose.pose.position.x = -0.05
+            pose.pose.position.y = 0
+        elif ch == 's':
+            pose.pose.position.x = 0.05
+            pose.pose.position.y = 0
+        elif ch == 'd':
+            pose.pose.position.x = 0
+            pose.pose.position.y = -0.05
+        else:
+            continue
+
+
+        MGC.set_joint_value_target(pose)
+        MGC.go()
+
+if __name__ == "__main__":
+    main()

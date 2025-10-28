@@ -1,0 +1,8 @@
+prefix=/home/hri25-group5/ros/devel/.private/motion_demo
+
+Name: motion_demo
+Description: Description of motion_demo
+Version: 0.0.0
+Cflags: -I/home/hri25-group5/ros/devel/.private/motion_demo/include
+Libs: 
+Requires: 

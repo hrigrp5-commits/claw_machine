@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+from geometry_msgs.msg import PoseStamped, Quaternion, Vector3, Point, Pose, Quaternion
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
+from moveit_commander import MoveGroupCommander
+import math
+import numpy as np
+import random
+import rospy
+import tf.transformations as tft
+
+velocity_scaling = 0.3 # dynamic_reconfigure parameter
+MGC_local = None
+
+# cb
+def velocity_scaling_cb(config, level):
+    global velocity_scaling
+    if config['velocity_scaling'] <= 0.0:
+        config['velocity_scaling'] = 0.01
+    velocity_scaling = config['velocity_scaling']
+    if MGC_local is not None:
+        MGC_local.stop()
+    return config
+
+import dynamic_reconfigure.server
+from motion_demo.cfg import VelocityConfig
+
+def main():
+    global MGC_local
+    global velocity_scaling
+
+    rospy.init_node('move_randomly_in_grid')
+
+    DRS = dynamic_reconfigure.server.Server(VelocityConfig, velocity_scaling_cb)
+
+    pose_pub = rospy.Publisher('/motion/target', PoseStamped, queue_size=1, latch=True)
+    visualization_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=1, latch=True)
+
+    MGC_global = MoveGroupCommander("arm")
+    MGC_global.set_max_velocity_scaling_factor(0.3)
+    MGC_local = MoveGroupCommander("arm_local")
+    MGC_local.set_planning_pipeline_id("pilz_industrial_motion_planner")
+    MGC_local.set_planner_id("LIN")
+    MGC_local.set_max_acceleration_scaling_factor(0.6)
+
+    # Define the grid points in x/y of table_top
+    grid_size_xy = (0.4, 0.65)  # Size of the grid in meters
+    grid_points = 5  # Number of points in each direction
+    grid_points = np.meshgrid(
+        np.linspace(-grid_size_xy[0] / 2, grid_size_xy[0] / 2, grid_points) - .05,
+        np.linspace(-grid_size_xy[1] / 2, grid_size_xy[1] / 2, grid_points)
+    )
+    grid_points = np.vstack(grid_points).reshape(2, -1).T
+
+    # start in the intended joint manifold
+    MGC_global.set_named_target("ready")
+
+    while not MGC_global.go(wait=True) and not rospy.is_shutdown():
+        rospy.logerr("Failed to reach initial pose 'ready', retrying...")
+        rospy.sleep(3.0)
+
+    pose = PoseStamped()
+    pose.header.frame_id = "table_top"
+    pose.pose.position.z = 0.15
+    pose.pose.orientation = Quaternion(*tft.quaternion_from_euler(0, math.tau/2, math.tau/4))
+
+    while not rospy.is_shutdown():
+        # publish grid points as blue spheres
+        visualization_pub.publish(MarkerArray(markers= [
+            Marker(
+                header=rospy.Header(frame_id="table_top"),
+                ns="grid_points",
+                id=0,
+                type=Marker.SPHERE_LIST,
+                action=Marker.ADD,
+                scale=Vector3(0.02, 0.02, 0.02),
+                color=ColorRGBA(0.0, 0.0, 1.0, .5),
+                pose=Pose(orientation=Quaternion(0,0,0,1)),
+                points=[Point(x=point[0], y=point[1], z=0.15) for point in grid_points]
+            )
+        ]))
+
+        pt= random.randint(0, grid_points.shape[0] - 1)
+        random_point = grid_points[pt]
+        pose.pose.position.x = random_point[0]
+        pose.pose.position.y = random_point[1]
+        pose_pub.publish(pose)
+
+        MGC_local.set_max_velocity_scaling_factor(velocity_scaling)
+        MGC_local.set_pose_target(pose)
+        (success, plan, _, error_code) = MGC_local.plan()
+        if not success:
+            rospy.logwarn(f"Point {random_point} not reachable. Planner returned:\n:{error_code}, removing from grid.")
+            grid_points = np.delete(grid_points, pt, axis=0)
+            rospy.sleep(1.0)
+            continue
+        else:
+            MGC_local.execute(plan, wait=True)
+            rospy.sleep(.25)
+
+if __name__ == "__main__":
+    main()
