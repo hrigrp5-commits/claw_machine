@@ -1,21 +1,17 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import PoseStamped, Quaternion, Vector3, Point, Pose, Quaternion
-from visualization_msgs.msg import Marker, MarkerArray
-from std_msgs.msg import ColorRGBA
-from moveit_commander import MoveGroupCommander
-import math
-import numpy as np
-import random
-import rospy
-import tf.transformations as tft
+import sys
 import termios
 import tty
-import select
-import sys
+import rospy
+import actionlib
+from geometry_msgs.msg import PoseStamped
+from moveit_commander import MoveGroupCommander, roscpp_initialize, roscpp_shutdown
+from franka_gripper.msg import MoveAction, MoveGoal, GraspAction, GraspGoal, GraspEpsilon
+
 
 def wait_for_char():
-    """Waits for a single key press and returns the character."""
+    """Wait for a single key press and return the character."""
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
@@ -25,56 +21,110 @@ def wait_for_char():
         return "q"
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    print(ch)  # echo the pressed key
+    print(ch)
     return ch
 
+
 def main():
+    roscpp_initialize(sys.argv)
+    rospy.init_node("teleop_grid", anonymous=True)
 
-    rospy.init_node('teleop_grid')
+    # --- Arm MoveIt Commander ---
+    arm_group = MoveGroupCommander("arm")
+    arm_group.set_max_velocity_scaling_factor(0.3)
+    arm_group.set_max_acceleration_scaling_factor(0.3)
 
-    pose_pub = rospy.Publisher('/motion/target', PoseStamped, queue_size=1, latch=True)
-    visualization_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=1, latch=True)
+    rospy.loginfo("Connecting to Franka gripper action servers...")
+    move_client = actionlib.SimpleActionClient("/franka_gripper/move", MoveAction)
+    grasp_client = actionlib.SimpleActionClient("/franka_gripper/grasp", GraspAction)
 
-    MGC = MoveGroupCommander("arm")
-    MGC.set_max_velocity_scaling_factor(0.3)
+    rospy.loginfo("Waiting for gripper servers...")
+    move_client.wait_for_server()
+    grasp_client.wait_for_server()
+    rospy.loginfo("Connected to gripper action servers.")
 
-    # start in the intended joint manifold
-    MGC.set_joint_value_target([-1.1795774549747768, -0.6763546984921459, 2.4263381437000473, -2.263770049458289, 0.9641311592823928, 2.631078570464189, 1.2334547503908793])
-
-    while not MGC.go(wait=True):
-        rospy.logerr("Failed to reach initial pose 'home', retrying...")
+    # --- Move to home pose at startup ---
+    home_joints = [
+         -1.1671909375337133, -0.6560649802080194, 
+        2.407508980533533, -2.2281587188913514, 
+        0.826152938397394, 2.5947603148886453, 
+        1.2985238186625971,
+    ]
+    arm_group.set_joint_value_target(home_joints)
+    rospy.loginfo("Moving to home pose...")
+    while not arm_group.go(wait=True):
+        rospy.logwarn("Retrying move to home...")
         rospy.sleep(3.0)
         if rospy.is_shutdown():
+            roscpp_shutdown()
             return
 
+    # --- Initialize pose for relative teleop ---
     pose = PoseStamped()
     pose.header.frame_id = "panda_hand_tcp"
     pose.pose.position.x = 0
     pose.pose.position.y = -0.05
-    pose.pose.orientation.w = 1
+    pose.pose.orientation.w = 1.0
+
+    rospy.loginfo(
+        "\nTeleop ready:\n"
+        "  W/A/S/D  = move arm\n"
+        "  G        = open gripper (3 cm)\n"
+        "  C        = close gripper\n"
+        "  Q        = quit\n"
+    )
 
     while not rospy.is_shutdown():
         ch = wait_for_char()
-        if ch == 'q':
-            return
-        elif ch == 'a':
+
+        if ch == "q":
+            rospy.loginfo("Exiting teleop...")
+            break
+
+        # ---- Arm control ----
+        elif ch == "a":
             pose.pose.position.x = 0
-            pose.pose.position.y = 0.05
-        elif ch == 'w':
-            pose.pose.position.x = -0.05
+            pose.pose.position.y = 0.03
+        elif ch == "w":
+            pose.pose.position.x = -0.03
             pose.pose.position.y = 0
-        elif ch == 's':
-            pose.pose.position.x = 0.05
+        elif ch == "s":
+            pose.pose.position.x = 0.03
             pose.pose.position.y = 0
-        elif ch == 'd':
+        elif ch == "d":
             pose.pose.position.x = 0
-            pose.pose.position.y = -0.05
+            pose.pose.position.y = -0.03
+
+        # ---- Gripper open ----
+        elif ch == "g":
+            rospy.loginfo("Opening gripper (3 cm)...")
+            goal = MoveGoal(width=0.03, speed=0.05)
+            move_client.send_goal(goal)
+            move_client.wait_for_result(rospy.Duration(5.0))
+            rospy.loginfo("Gripper opened.")
+            continue
+
+        # ---- Gripper close (grasp) ----
+        elif ch == "c":
+            rospy.loginfo("Closing gripper...")
+            goal = GraspGoal()
+            goal.width = 0.0                     # fully closed
+            goal.speed = 0.05                    # m/s
+            goal.force = 5.0                     # N
+            goal.epsilon = GraspEpsilon(inner=0.3, outer=0.3)
+            grasp_client.send_goal(goal)
+            grasp_client.wait_for_result(rospy.Duration(5.0))
+            rospy.loginfo("Gripper closed.")
+            continue
+
         else:
             continue
 
+        arm_group.set_joint_value_target(pose)
+        arm_group.go(wait=True)
 
-        MGC.set_joint_value_target(pose)
-        MGC.go()
+    roscpp_shutdown()
+
 
 if __name__ == "__main__":
     main()
