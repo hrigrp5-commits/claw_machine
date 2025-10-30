@@ -130,73 +130,79 @@ def main():
 
 
         elif ch == "c":
+            try:
+                # go down by 2 cm
+                pose.pose.position.x = 0
+                pose.pose.position.y = 0
+                pose.pose.position.z = 0.02
+                rospy.loginfo("Attempting to move down by 2 cm...")
 
-            # go down by 2 cm
-            pose.pose.position.x = 0
-            pose.pose.position.y = 0
-            pose.pose.position.z = 0.02
-            rospy.loginfo("Moved Down.")
+                arm_group.set_joint_value_target(pose)
+                success = arm_group.go(wait=True)
+                arm_group.stop()
+                arm_group.clear_pose_targets()
 
+                if not success:
+                    rospy.logerr("Move down aborted or failed — skipping grasp.")
+                    continue  
+                rospy.loginfo("Moved down successfully, proceeding to grasp...")
 
-            arm_group.set_joint_value_target(pose)
-            arm_group.go(wait=True)
+                # close the gripper to grasp the object 
+                rospy.loginfo("Closing gripper...")
+                goal = GraspGoal()
+                goal.width = 0.0                     # fully closed
+                goal.speed = 0.05                    # m/s
+                goal.force = 5.0                     # N
+                goal.epsilon = GraspEpsilon(inner=0.3, outer=0.3)
 
+                grasp_client.send_goal(goal)
+                grasp_client.wait_for_result(rospy.Duration(5.0))
+                rospy.loginfo("Gripper closed.")
 
-            #closes the gripper to grab the object        
-            rospy.loginfo("Closing gripper...")
-            goal = GraspGoal()
-            goal.width = 0.0                     # fully closed
-            goal.speed = 0.05                    # m/s
-            goal.force = 5.0                     # N
-            goal.epsilon = GraspEpsilon(inner=0.3, outer=0.3)
-            #if the grasp is unsuccessful 
-            #logerror and continue
-            grasp_client.send_goal(goal)
-            grasp_client.wait_for_result(rospy.Duration(5.0))
-            rospy.loginfo("Gripper closed.")
+                # move up by 25 cm
+                pose.pose.position.x = 0
+                pose.pose.position.y = 0
+                pose.pose.position.z = -0.25
+                arm_group.set_joint_value_target(pose)
+                arm_group.go(wait=True)
 
-            # move up by 6 cm dww
-            pose.pose.position.x = 0
-            pose.pose.position.y = 0
-            pose.pose.position.z = - 0.25
+                # --- Move to discard pose ---
+                discard_joints = [
+                    -0.87768080665145, -0.7483236951482923,
+                    0.8972143784873035, -2.781962041787934,
+                    0.7186038433660632, 2.141733352608151,
+                    0.18308159769657587
+                ]
+                arm_group.set_joint_value_target(discard_joints)
+                rospy.loginfo("Moving to discard pose...")
+                while not arm_group.go(wait=True):
+                    rospy.logwarn("Retrying move to discard...")
+                    rospy.sleep(3.0)
+                    if rospy.is_shutdown():
+                        roscpp_shutdown()
+                        return
 
-            arm_group.set_joint_value_target(pose)
-            arm_group.go(wait=True)
+                # open gripper to drop object 
+                rospy.loginfo("Opening gripper (3 cm)...")
+                goal = MoveGoal(width=0.03, speed=0.05)
+                move_client.send_goal(goal)
+                move_client.wait_for_result(rospy.Duration(5.0))
+                rospy.loginfo("Gripper opened.")
 
+                # return to home pose 
+                arm_group.set_joint_value_target(home_joints)
+                rospy.loginfo("Moving to home pose...")
+                while not arm_group.go(wait=True):
+                    rospy.logwarn("Retrying move to home...")
+                    rospy.sleep(3.0)
+                    if rospy.is_shutdown():
+                        roscpp_shutdown()
+                        return
+                continue
 
-            # move to the discard pile pose
-            discard_joints = [
-                -0.87768080665145, -0.7483236951482923, 
-                0.8972143784873035, -2.781962041787934, 
-                0.7186038433660632, 2.141733352608151, 
-                0.18308159769657587
-            ] # needs to be changed
-            arm_group.set_joint_value_target(discard_joints)
-            rospy.loginfo("Moving to discard pose...")
-            while not arm_group.go(wait=True):
-                rospy.logwarn("Retrying move to discard...")
-                rospy.sleep(3.0)
-                if rospy.is_shutdown():
-                    roscpp_shutdown()
-                    return
-
-            # gripper opens and drops the object
-            rospy.loginfo("Opening gripper (3 cm)...")
-            goal = MoveGoal(width=0.03, speed=0.05)
-            move_client.send_goal(goal)
-            move_client.wait_for_result(rospy.Duration(5.0))
-            rospy.loginfo("Gripper opened.")
-
-            # move to home pose
-            arm_group.set_joint_value_target(home_joints)
-            rospy.loginfo("Moving to home pose...")
-            while not arm_group.go(wait=True):
-                rospy.logwarn("Retrying move to home...")
-                rospy.sleep(3.0)
-                if rospy.is_shutdown():
-                    roscpp_shutdown()
-                    return
-            continue
+            except Exception as e:
+                rospy.logerr(f"Exception during move down or grasp: {e}")
+                continue 
         else:
             continue
 
