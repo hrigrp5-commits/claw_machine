@@ -26,15 +26,133 @@ def wait_for_char():
     print(ch)
     return ch
 
-# def go_home(arm_group):
+def go_home(arm_group):
 
-#     # going to the home state
-#     try:
+    # going to the home state
 
-#     except Exception as e:
-#         logging.error(f"failed: {e}")
+    home_joints = [
+        -1.4642156372133055, -0.5381639131847715, 
+        2.688624808930513, -2.2429689467696368, 
+        0.5268982604079776, 2.680131860044259, 
+        1.5856962567979076
+    ]
+    arm_group.set_joint_value_target(home_joints)
+
+    """
+        The following code was created to fix the robot arm position.
+        We gave a position relative to "table_top" frame which was base of everything.
+        After that in RVizz we got the orientation and position coordinates.    
+        Which then we wrote in the following code. After that we echoed the logs to see
+        were the robot actually was and first 7 numbers were copied in the code above.
+        Reason for this was to robot to start always from the same position.#
+        if we always started with the robot relative to the table_top then the robot 
+        upper joint might have been lower than we want resulting in us not able to move 
+        back properly. Therefore, we saved one position from the relatively good 
+        position and saved it.
+    """
+
+    # home_pose = PoseStamped()
+    # home_pose.header.frame_id = "table_top"
+    # home_pose.pose.orientation.x = -1
+    # home_pose.pose.position.x = 0.05
+    # home_pose.pose.position.y = 0.10
+    # home_pose.pose.position.z = 0.07
+    # arm_group.set_joint_value_target(home_pose)
+
+    rospy.loginfo("Moving to home pose...")
+    while not arm_group.go(wait=True):
+        rospy.logwarn("Retrying move to home...")
+        rospy.sleep(3.0)
+        if rospy.is_shutdown():
+            roscpp_shutdown()
+            return
+        
+def grip_open(move_client):
+    
+    """ gripper opens for 3 cm width """
+    rospy.loginfo("Opening gripper (3 cm)...")
+    goal = MoveGoal(width=0.03, speed=0.05)
+    move_client.send_goal(goal)
+    move_client.wait_for_result(rospy.Duration(5.0))
+    rospy.loginfo("Gripper opened.")
+
+def grip_close(move_client, grasp_client):
+    
+    """ gripper closes for 3 cm width """
+    rospy.loginfo("Closing gripper...")
+    goal = GraspGoal()
+    goal.width = 0.0                     # fully closed
+    goal.speed = 0.05                    # m/s
+    goal.force = 5.0                     # N
+    goal.epsilon = GraspEpsilon(inner=0.3, outer=0.3)
+    #if the grasp is unsuccessful 
+    #logerror and continue
+    grasp_client.send_goal(goal)
+    grasp_client.wait_for_result(rospy.Duration(5.0))
+    rospy.loginfo("Gripper closed.")
 
 
+def move_right(pose, arm_group):
+
+    """ move right """
+    pose.pose.position.x = 0
+    pose.pose.position.y = 0.03
+    pose.pose.position.z = 0
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+
+    rospy.loginfo("Move right")
+
+
+def move_left(pose, arm_group):
+
+    """ move left """
+    pose.pose.position.x = 0
+    pose.pose.position.y = -0.03
+    pose.pose.position.z = 0
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+
+    rospy.loginfo("Move left")
+
+def move_forward(pose, arm_group):
+
+    """ move forward """
+    pose.pose.position.x = -0.03
+    pose.pose.position.y = 0
+    pose.pose.position.z = 0
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+
+    rospy.loginfo("Move forward")
+
+
+def move_back(pose, arm_group):
+
+    """ move back """
+    pose.pose.position.x = 0.03
+    pose.pose.position.y = 0
+    pose.pose.position.z = 0
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+
+    rospy.loginfo("Move back")
+
+def move_down(pose, arm_group):
+
+    """ move down """
+    pose.pose.position.x = 0
+    pose.pose.position.y = 0
+    pose.pose.position.z = 0.02
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+
+    rospy.loginfo("Move back")
 
 def main():
     roscpp_initialize(sys.argv)
@@ -54,36 +172,9 @@ def main():
     grasp_client.wait_for_server()
     rospy.loginfo("Connected to gripper action servers.")
 
-    # go_home(arm_group)
+    go_home(arm_group)
 
-    home_joints = [
-        -1.4642156372133055, -0.5381639131847715, 2.688624808930513, -2.2429689467696368, 0.5268982604079776, 2.680131860044259, 1.5856962567979076
-    ]
-    arm_group.set_joint_value_target(home_joints)
-
-
-    # home_pose = PoseStamped()
-    # home_pose.header.frame_id = "table_top"
-    # home_pose.pose.orientation.x = -1
-    # home_pose.pose.position.x = 0.05
-    # home_pose.pose.position.y = 0.10
-    # home_pose.pose.position.z = 0.07
-    # arm_group.set_joint_value_target(home_pose)
-
-    rospy.loginfo("Moving to home pose...")
-    while not arm_group.go(wait=True):
-        rospy.logwarn("Retrying move to home...")
-        rospy.sleep(3.0)
-        if rospy.is_shutdown():
-            roscpp_shutdown()
-            return
-
-    # gripper opens for initial state
-    rospy.loginfo("Opening gripper (3 cm)...")
-    goal = MoveGoal(width=0.03, speed=0.05)
-    move_client.send_goal(goal)
-    move_client.wait_for_result(rospy.Duration(5.0))
-    rospy.loginfo("Gripper opened.")
+    grip_open(move_client)
 
     # --- Initialize pose for relative teleop ---
     pose = PoseStamped()
@@ -108,39 +199,21 @@ def main():
             break
 
         # ---- Arm control ----
-        elif ch == "a":
-            pose.pose.position.x = 0
-            pose.pose.position.y = 0.03
-            pose.pose.position.z = 0
+        elif ch == "a": # go right 
+            move_right(pose, arm_group)
 
-        elif ch == "w":
-            pose.pose.position.x = -0.03
-            pose.pose.position.y = 0
-            pose.pose.position.z = 0
+        elif ch == "w": # go forward
+            move_forward(pose, arm_group)
 
-        elif ch == "s":
-            pose.pose.position.x = 0.03
-            pose.pose.position.y = 0
-            pose.pose.position.z = 0
+        elif ch == "s": # go back
+            move_back(pose, arm_group)
 
-        elif ch == "d":
-            pose.pose.position.x = 0
-            pose.pose.position.y = -0.03
-            pose.pose.position.z = 0
-
+        elif ch == "d": # go left
+            move_left(pose, arm_group)
 
         elif ch == "c":
 
-            # go down by 2 cm
-            pose.pose.position.x = 0
-            pose.pose.position.y = 0
-            pose.pose.position.z = 0.02
-            rospy.loginfo("Moved Down.")
-
-
-            arm_group.set_joint_value_target(pose)
-            arm_group.go(wait=True)
-
+            move_down(pose, arm_group)
 
             #closes the gripper to grab the object        
             rospy.loginfo("Closing gripper...")
@@ -155,7 +228,7 @@ def main():
             grasp_client.wait_for_result(rospy.Duration(5.0))
             rospy.loginfo("Gripper closed.")
 
-            # move up by 6 cm dww
+            # move up by 6 cm 
             pose.pose.position.x = 0
             pose.pose.position.y = 0
             pose.pose.position.z = - 0.25
