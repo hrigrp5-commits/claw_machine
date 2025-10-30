@@ -108,7 +108,18 @@ def move_right(pose, arm_group):
 def move_left(pose, arm_group):
 
     """ move left """
+    pose.pooginfo("Move back")
+
+def move_down(pose, arm_group):
+
+    """ move down """
     pose.pose.position.x = 0
+    pose.pose.position.y = 0
+    pose.pose.position.z = 0.02
+
+    arm_group.set_joint_value_target(pose)
+    arm_group.go(wait=True)
+    pose.position.x = 0
     pose.pose.position.y = -0.03
     pose.pose.position.z = 0
 

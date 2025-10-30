@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="cu_panda">
+  <xacro:include filename="$(find franka_description)/robots/common/franka_robot.xacro"/>
+
+  <xacro:franka_robot arm_id="panda"
+                      joint_limits="${xacro.load_yaml('$(find franka_description)/robots/panda/joint_limits.yaml')}"
+                      hand="true"
+                      tcp_xyz="0 0 0.1034"
+                      tcp_rpy="0 0 0">
+  </xacro:franka_robot>
+
+  <link name="panda_mounting_plate">
+    <visual>
+      <geometry>
+        <box size="0.32 0.216 0.026"/>
+      </geometry>
+      <material name="lightblack">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+      <origin xyz="0 0 0.013" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.32 0.216 0.034"/>
+      </geometry>
+      <origin xyz="0 0 0.017" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <joint name="panda_mounting_plate_joint" type="fixed">
+    <child link="panda_link0"/>
+    <parent link="panda_mounting_plate"/>
+    <origin xyz="0.033 0 0.026" rpy="0 0 0"/>
+  </joint>
+
+  <link name="table">
+    <visual>
+      <geometry>
+        <box size="0.7 1.074 0.026"/>
+      </geometry>
+      <material name="lightgrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+      <origin xyz="0 0 0.013" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.7 1.074 0.026"/>
+      </geometry>
+      <origin xyz="0 0 0.013" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <joint name="mounting_table_joint" type="fixed">
+    <child link="panda_mounting_plate"/>
+    <parent link="table"/>
+    <origin xyz="${-0.35+0.16} ${-0.537+0.04+0.108} 0.026" rpy="0 0 0"/>
+  </joint>
+
+  <link name="table_top"/>
+
+  <joint name="table_top_joint" type="fixed">
+    <child link="table_top"/>
+    <parent link="table"/>
+    <origin xyz="0 0 0.026" rpy="0 0 0"/>
+  </joint>
+
+  <link name="window_collider">
+    <collision>
+      <geometry>
+        <box size="1.0 0.2 1.5"/>
+      </geometry>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <box size="1.0 0.2 1.5"/>
+      </geometry>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <material name="virtualvolume">
+        <color rgba="0.3 0.3 0.3 0.1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="window_collider_joint" type="fixed">
+    <child link="window_collider"/>
+    <parent link="table"/>
+    <origin xyz="0 ${-1.074/2-0.1-0.15} ${1.5/2}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wall">
+    <collision>
+      <geometry>
+        <box size="0.1 2.0 1.5"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <box size="0.1 2.0 1.5"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="lightgrey"/>
+    </visual>
+  </link>
+
+  <joint name="wall_joint" type="fixed">
+    <child link="wall"/>
+    <parent link="table"/>
+    <origin xyz="${-0.35-0.05-0.19} 0 0.75" rpy="0 0 0"/>
+  </joint>
+
+  <link name="behind_table_collider">
+    <collision>
+      <geometry>
+        <box size="0.19 1.7 ${0.08+0.026}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <box size="0.19 1.7 ${0.08+0.026}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="lightgrey"/>
+    </visual>
+  </link>
+
+  <joint name="behind_table_collider_joint" type="fixed">
+    <child link="behind_table_collider"/>
+    <parent link="table"/>
+   <origin xyz="${-0.35-0.095} 0 ${0.026}" rpy="0 0 0"/>
+  </joint>
+
+</robot>

@@ -1,0 +1,28 @@
+<launch>
+  <include file="$(find cu_panda_bringup)/launch/hardware.launch">
+    <arg name="rviz" value="false" />
+  </include>
+  <param name="robot_description" command="$(find xacro)/xacro '$(find claw_machine)/Robot/setup.urdf.xacro'" />
+
+  <!-- Load parameters (optional) -->
+  <param name="use_sim_time" value="false"/>
+
+  <!-- Start your teleop Python node -->
+  <node
+      pkg="claw_machine"
+      type="teleop_grid2.py"
+      name="teleop_grid2"
+      output="screen"
+      launch-prefix="bash -c 'sleep 2; $0 $@'"
+  />
+
+  <!-- Optional: Launch RViz with a config -->
+  <node
+      pkg="rviz"
+      type="rviz"
+      name="rviz"
+      args="-d $(find claw_machine)/config/arm_config.rviz"
+      output="screen"
+  />
+
+</launch>
