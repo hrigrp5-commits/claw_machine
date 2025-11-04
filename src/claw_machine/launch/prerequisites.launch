@@ -3,6 +3,7 @@
   <include file="$(find cu_panda_bringup)/launch/hardware.launch">
     <arg name="rviz" value="false" />
   </include>
+  <param name="robot_description" command="xacro $(dirname)/../robots/setup.urdf.xacro" />
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find claw_machine)/config/arm_config.rviz" />
 </launch>

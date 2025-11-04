@@ -44,6 +44,7 @@ def main():
     arm_group = MoveGroupCommander("arm")
     arm_group.set_max_velocity_scaling_factor(0.3)
     arm_group.set_max_acceleration_scaling_factor(0.3)
+    arm_group.set_planning_time(1.0)
 
     rospy.loginfo("Connecting to Franka gripper action servers...")
     move_client = actionlib.SimpleActionClient("/franka_gripper/move", MoveAction)
@@ -162,7 +163,7 @@ def main():
                 # move up by 25 cm
                 pose.pose.position.x = 0
                 pose.pose.position.y = 0
-                pose.pose.position.z = -0.25
+                pose.pose.position.z = -0.30
                 arm_group.set_joint_value_target(pose)
                 arm_group.go(wait=True)
 
@@ -174,6 +175,7 @@ def main():
                     0.18308159769657587
                 ]
                 arm_group.set_joint_value_target(discard_joints)
+                arm_group.set_planner_id("RRTstar")
                 rospy.loginfo("Moving to discard pose...")
                 while not arm_group.go(wait=True):
                     rospy.logwarn("Retrying move to discard...")
@@ -181,7 +183,7 @@ def main():
                     if rospy.is_shutdown():
                         roscpp_shutdown()
                         return
-
+                arm_group.set_planner_id("RRTConnect")
                 # open gripper to drop object 
                 rospy.loginfo("Opening gripper (3 cm)...")
                 goal = MoveGoal(width=0.03, speed=0.05)

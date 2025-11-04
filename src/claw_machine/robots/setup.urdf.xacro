@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="cu_panda">
+  <xacro:include filename="$(find cu_panda_description)/robots/basic_setup.urdf.xacro"/>
+  <link name="collector">
+    <visual>
+      <geometry>
+        <cylinder radius="0.10" length="0.26" />
+      </geometry>
+      <material name="orange">
+        <color rgba="0.39 1.0 0.50 1.0"/>
+      </material>
+      <origin xyz="0.3 0 0.013" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius= "0.09" length="0.20"/>
+      </geometry>
+      <origin xyz="0.3 0 0.013" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <joint name="collector_table_joint" type="fixed">
+    <child link="collector"/>
+    <parent link="table"/>
+    <origin xyz="-0.1 -0.389 0.12" rpy="0 0 0"/>
+  </joint>
+</robot>

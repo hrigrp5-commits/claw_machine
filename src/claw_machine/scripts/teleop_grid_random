@@ -1,0 +1,364 @@
+#!/usr/bin/env python
+
+import sys
+import termios
+import tty
+import rospy
+import actionlib
+from geometry_msgs.msg import PoseStamped
+from moveit_commander import MoveGroupCommander, roscpp_initialize, roscpp_shutdown
+from franka_gripper.msg import MoveAction, MoveGoal, GraspAction, GraspGoal, GraspEpsilon
+import logging
+import random
+logging.basicConfig(level=logging.INFO)
+
+
+def wait_for_char():
+    """Wait for a single key press and return the character."""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+    except KeyboardInterrupt:
+        return "q"
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    print(ch)
+    return ch
+
+# def go_home(arm_group):
+
+#     # going to the home state
+#     try:
+
+#     except Exception as e:
+#         logging.error(f"failed: {e}")
+
+
+
+def main():
+    roscpp_initialize(sys.argv)
+    rospy.init_node("teleop_grid", anonymous=True)
+
+    # --- Arm MoveIt Commander ---
+    arm_group = MoveGroupCommander("arm")
+    arm_group.set_max_velocity_scaling_factor(0.3)
+    arm_group.set_max_acceleration_scaling_factor(0.3)
+    arm_group.set_planning_time(1.0)
+
+    rospy.loginfo("Connecting to Franka gripper action servers...")
+    move_client = actionlib.SimpleActionClient("/franka_gripper/move", MoveAction)
+    grasp_client = actionlib.SimpleActionClient("/franka_gripper/grasp", GraspAction)
+
+    rospy.loginfo("Waiting for gripper servers...")
+    move_client.wait_for_server()
+    grasp_client.wait_for_server()
+    rospy.loginfo("Connected to gripper action servers.")
+
+    # go_home(arm_group)
+
+    home_joints = [
+        -1.4642156372133055, -0.5381639131847715, 2.688624808930513, -2.2429689467696368, 0.5268982604079776, 2.680131860044259, 1.5856962567979076
+    ]
+    arm_group.set_joint_value_target(home_joints)
+
+
+    # home_pose = PoseStamped()
+    # home_pose.header.frame_id = "table_top"
+    # home_pose.pose.orientation.x = -1
+    # home_pose.pose.position.x = 0.05
+    # home_pose.pose.position.y = 0.10
+    # home_pose.pose.position.z = 0.07
+    # arm_group.set_joint_value_target(home_pose)
+
+    rospy.loginfo("Moving to home pose...")
+    while not arm_group.go(wait=True):
+        rospy.logwarn("Retrying move to home...")
+        rospy.sleep(3.0)
+        if rospy.is_shutdown():
+            roscpp_shutdown()
+            return
+
+    # gripper opens for initial state
+    rospy.loginfo("Opening gripper (3 cm)...")
+    goal = MoveGoal(width=0.03, speed=0.05)
+    move_client.send_goal(goal)
+    move_client.wait_for_result(rospy.Duration(5.0))
+    rospy.loginfo("Gripper opened.")
+
+    rospy.loginfo(
+        "\nTeleop ready:\n"
+        "  W/A/S/D  = move arm\n"
+        "  G        = open gripper (3 cm)\n"
+        "  C        = close gripper\n"
+        "  Q        = quit\n"
+    )
+
+    # Define this before your while loop starts
+    move_count = 0
+    random_freq = [n for n in range(4,7)]
+    freq = random.choice(random_freq) # pick a frequency to have random movements in
+
+    while not rospy.is_shutdown():
+        ch = wait_for_char()
+        if ch == "q":
+            rospy.loginfo("Exiting teleop...")
+            break
+
+        # ---- Arm control ----
+        # elif ch == "a":
+        #     num = random.randint(1, 100)
+        #     print("a - ", num)
+        #     if(num >= 70): 
+        #         offset_x = 0
+        #         offset_y = -0.03
+        #     else: 
+        #         offset_x = -0.03
+        #         offset_y = 0
+
+        # elif ch == "w":
+        #     num = random.randint(1, 100)
+        #     print("w - ", num)
+        #     if (num >= 70): 
+        #         offset_x = 0.03
+        #         offset_y = 0
+        #     else:
+        #         offset_x = -0.03
+        #         offset_y = 0
+        # elif ch == "s":
+        #     num = random.randint(1, 100)
+        #     print("s - ", num)
+        #     if (num >= 70):
+        #         offset_x = -0.03
+        #         offset_y = 0
+        #     else:
+        #         offset_x = 0.03
+        #         offset_y = 0
+                
+        # elif ch == "d":
+        #     num = random.randint(1, 100)
+        #     print("d - ", num)
+        #     if (num >= 70):
+        #         offset_x = 0
+        #         offset_y = 0.03
+        #     else:
+        #         offset_x = 0
+        #         offset_y = -0.03
+
+            # ---- Arm control ----
+        if ch in ["w", "a", "s", "d"]:
+            move_count += 1  # count each valid movement
+            print(move_count)
+
+            # Every nth movement: override direction randomly
+            if move_count % freq == 0:
+                if ch == "a":
+                    other_dirs_1 = [d for d in ["j", "b"]]
+                    random_dir = random.choice(other_dirs_1)
+                    random_freq = [n for n in range(4,7)]
+                    freq = random.choice(random_freq)
+                if ch == "w":
+                    other_dirs_1 = [d for d in ["i", "h"]]
+                    random_dir = random.choice(other_dirs_1)
+                    random_freq = [n for n in range(4,7)]
+                    freq = random.choice(random_freq)
+                if ch == "s":
+                    other_dirs_1 = [d for d in ["k", "n"]]
+                    random_dir = random.choice(other_dirs_1)
+                    random_freq = [n for n in range(4,7)]
+                    freq = random.choice(random_freq)
+                if ch == "d":
+                    other_dirs_1 = [d for d in ["m", "l"]]
+                    random_dir = random.choice(other_dirs_1)
+                    random_freq = [n for n in range(4,7)]
+                    freq = random.choice(random_freq)
+                rospy.loginfo(f"{freq}th move! Randomly changing direction from '{ch}' to '{random_dir}'")
+                ch = random_dir
+
+        if ch == "a":
+            # num = random.randint(1, 100)
+            # print("a - ", num)
+            # if num >= 70: 
+            #     offset_x = 0
+            #     offset_y = -0.03
+            # else: 
+            offset_x = 0
+            offset_y = -0.03
+
+        elif ch == "w":
+            # num = random.randint(1, 100)
+            # print("w - ", num)
+            # if num >= 70: 
+            #     offset_x = 0.03
+            #     offset_y = 0
+            # else:
+            offset_x = -0.03
+            offset_y = 0
+
+        elif ch == "s":
+            # num = random.randint(1, 100)
+            # print("s - ", num)
+            # if num >= 70:
+            #     offset_x = -0.03
+            #     offset_y = 0
+            # else:
+            offset_x = 0.03
+            offset_y = 0
+
+        elif ch == "d":
+            # num = random.randint(1, 100)
+            # print("d - ", num)
+            # if num >= 70:
+            #     offset_x = 0
+            #     offset_y = 0.03
+            # else:
+            offset_x = 0
+            offset_y = 0.03
+
+        # variables for 8 different diagonal directions
+        
+        elif ch == "j":
+            offset_x = -0.03
+            offset_y = -0.03
+
+        elif ch == "i":
+            offset_x = -0.03
+            offset_y = 0.03
+
+        elif ch == "k":
+            offset_x = 0.03
+            offset_y = 0.03
+
+        elif ch == "l":
+            offset_x = 0.03
+            offset_y = 0.03
+
+        elif ch == "b":
+            offset_x = 0.03
+            offset_y = -0.03
+
+        elif ch == "h":
+            offset_x = -0.03
+            offset_y = -0.03
+
+        elif ch == "n":
+            offset_x = 0.03
+            offset_y = -0.03
+
+        elif ch == "m":
+            offset_x = -0.03
+            offset_y = 0.03
+
+        elif ch == "c":
+            try:
+                # go down by 2 cm
+                offset_x = 0
+                offset_y = 0
+                pose.pose.position.z -= 0.02
+                rospy.loginfo("Attempting to move down by 2 cm...")
+
+                arm_group.set_joint_value_target(pose)
+                success = arm_group.go(wait=True)
+                arm_group.stop()
+                arm_group.clear_pose_targets()
+
+                if not success:
+                    rospy.logerr("Move down aborted or failed — skipping grasp.")
+                    continue  
+                rospy.loginfo("Moved down successfully, proceeding to grasp...")
+
+                # close the gripper to grasp the object 
+                rospy.loginfo("Closing gripper...")
+                goal = GraspGoal()
+                goal.width = 0.0                     # fully closed
+                goal.speed = 0.05                    # m/s
+                goal.force = 5.0                     # N
+                goal.epsilon = GraspEpsilon(inner=0.3, outer=0.3)
+
+                grasp_client.send_goal(goal)
+                grasp_client.wait_for_result(rospy.Duration(5.0))
+                rospy.loginfo("Gripper closed.")
+
+                # move up by 30 cm
+                pose = arm_group.get_current_pose('panda_hand_tcp')
+                pose.pose.position.z += 0.30
+
+                arm_group.set_joint_value_target(pose)
+                arm_group.go(wait=True)
+
+
+                # --- Move to discard pose ---
+                discard_joints = [
+                    -0.87768080665145, -0.7483236951482923,
+                    0.8972143784873035, -2.781962041787934,
+                    0.7186038433660632, 2.141733352608151,
+                    0.18308159769657587
+                ]
+                arm_group.set_joint_value_target(discard_joints)
+                arm_group.set_planner_id("RRTstar")
+                rospy.loginfo("Moving to discard pose...")
+                while not arm_group.go(wait=True):
+                    rospy.logwarn("Retrying move to discard...")
+                    rospy.sleep(3.0)
+                    if rospy.is_shutdown():
+                        roscpp_shutdown()
+                        return
+                arm_group.set_planner_id("RRTConnect")
+                # open gripper to drop object 
+                rospy.loginfo("Opening gripper (3 cm)...")
+                goal = MoveGoal(width=0.03, speed=0.05)
+                move_client.send_goal(goal)
+                move_client.wait_for_result(rospy.Duration(5.0))
+                rospy.loginfo("Gripper opened.")
+
+                # return to home pose 
+                arm_group.set_joint_value_target(home_joints)
+                rospy.loginfo("Moving to home pose...")
+                while not arm_group.go(wait=True):
+                    rospy.logwarn("Retrying move to home...")
+                    rospy.sleep(3.0)
+                    if rospy.is_shutdown():
+                        roscpp_shutdown()
+                        return
+                continue
+
+            except Exception as e:
+                rospy.logerr(f"Exception during move down or grasp: {e}")
+                continue 
+        else:
+            continue
+
+        # from IPython import embed
+        # embed()
+
+        pose = arm_group.get_current_pose('panda_hand_tcp')
+        pose.pose.position.x += offset_x
+        pose.pose.position.y += offset_y
+        pose.pose.position.z =  0.096
+        pose.pose.orientation.x = -1
+        pose.pose.orientation.y = 0
+        pose.pose.orientation.z = 0
+
+
+        arm_group.set_joint_value_target(pose)
+        arm_group.go(wait=True)
+
+    roscpp_shutdown()
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+# # ---- Gripper open ----
+# elif ch == "g":
+#     rospy.loginfo("Opening gripper (3 cm)...")
+#     goal = MoveGoal(width=0.03, speed=0.05)
+#     move_client.send_goal(goal)
+#     move_client.wait_for_result(rospy.Duration(5.0))
+#     rospy.loginfo("Gripper opened.")
+#     continue
+
+# ---- Gripper close (grasp) ----
