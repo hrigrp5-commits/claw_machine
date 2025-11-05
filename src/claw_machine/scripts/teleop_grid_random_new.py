@@ -27,15 +27,6 @@ def wait_for_char():
     print(ch)
     return ch
 
-# def go_home(arm_group):
-
-#     # going to the home state
-#     try:
-
-#     except Exception as e:
-#         logging.error(f"failed: {e}")
-
-
 
 def main():
     roscpp_initialize(sys.argv)
@@ -90,165 +81,95 @@ def main():
     rospy.loginfo(
         "\nTeleop ready:\n"
         "  W/A/S/D  = move arm\n"
-        "  G        = open gripper (3 cm)\n"
-        "  C        = close gripper\n"
+        "  C        = take the block\n"
         "  Q        = quit\n"
     )
 
     # Define this before your while loop starts
     move_count = 0
-    random_freq = [n for n in range(4,7)]
-    freq = random.choice(random_freq) # pick a frequency to have random movements in
+    freq = 2
+    rand_count = 0
 
     while not rospy.is_shutdown():
         ch = wait_for_char()
         if ch == "q":
             rospy.loginfo("Exiting teleop...")
+            print(move_count, rand_count)
             break
 
         # ---- Arm control ----
-        # elif ch == "a":
-        #     num = random.randint(1, 100)
-        #     print("a - ", num)
-        #     if(num >= 70): 
-        #         offset_x = 0
-        #         offset_y = -0.03
-        #     else: 
-        #         offset_x = -0.03
-        #         offset_y = 0
-
-        # elif ch == "w":
-        #     num = random.randint(1, 100)
-        #     print("w - ", num)
-        #     if (num >= 70): 
-        #         offset_x = 0.03
-        #         offset_y = 0
-        #     else:
-        #         offset_x = -0.03
-        #         offset_y = 0
-        # elif ch == "s":
-        #     num = random.randint(1, 100)
-        #     print("s - ", num)
-        #     if (num >= 70):
-        #         offset_x = -0.03
-        #         offset_y = 0
-        #     else:
-        #         offset_x = 0.03
-        #         offset_y = 0
-                
-        # elif ch == "d":
-        #     num = random.randint(1, 100)
-        #     print("d - ", num)
-        #     if (num >= 70):
-        #         offset_x = 0
-        #         offset_y = 0.03
-        #     else:
-        #         offset_x = 0
-        #         offset_y = -0.03
-
-            # ---- Arm control ----
         if ch in ["w", "a", "s", "d"]:
             move_count += 1  # count each valid movement
-            print(move_count)
+
+            perc = 50     
+
+            rand_freq = random.randint(1, 100)
 
             # Every nth movement: override direction randomly
-            if move_count % freq == 0:
+            if move_count % freq == 0 and rand_freq <= perc:
+
+                print(move_count, rand_freq, freq)
+
+                rand_count += 1
+
                 if ch == "a":
-                    other_dirs_1 = [d for d in ["j", "b"]]
-                    random_dir = random.choice(other_dirs_1)
-                    random_freq = [n for n in range(4,7)]
-                    freq = random.choice(random_freq)
+                    if rand_freq <= perc / 2: #south_west
+                        print("Moving South_West")
+                        offset_x = 0.03
+                        offset_y = -0.03
+                    elif rand_freq <= perc: # north_west
+                        print("Moving North_West")
+                        offset_x = -0.03
+                        offset_y = -0.03
+                        
                 if ch == "w":
-                    other_dirs_1 = [d for d in ["i", "h"]]
-                    random_dir = random.choice(other_dirs_1)
-                    random_freq = [n for n in range(4,7)]
-                    freq = random.choice(random_freq)
+                    if rand_freq <= perc: # north_west
+                        print("Moving North_West")
+                        offset_x = -0.03
+                        offset_y = -0.03
+                    elif rand_freq < perc: #north_east
+                        print("Moving North_East")
+                        offset_x = -0.03
+                        offset_y = 0.03
+
                 if ch == "s":
-                    other_dirs_1 = [d for d in ["k", "n"]]
-                    random_dir = random.choice(other_dirs_1)
-                    random_freq = [n for n in range(4,7)]
-                    freq = random.choice(random_freq)
+                    if rand_freq <= perc: #south_west
+                        print("Moving South_West")
+                        offset_x = 0.03
+                        offset_y = -0.03
+                    elif rand_freq < perc: #south_east
+                        print("Moving South_East")
+                        offset_x = 0.03
+                        offset_y = 0.03
+
                 if ch == "d":
-                    other_dirs_1 = [d for d in ["m", "l"]]
-                    random_dir = random.choice(other_dirs_1)
-                    random_freq = [n for n in range(4,7)]
-                    freq = random.choice(random_freq)
-                rospy.loginfo(f"{freq}th move! Randomly changing direction from '{ch}' to '{random_dir}'")
-                ch = random_dir
+                    if rand_freq <= perc: #north_east
+                        print("Moving North_East")
+                        offset_x = -0.03
+                        offset_y = 0.03
+                    elif rand_freq < perc: #south_east
+                        print("Moving South_East")
+                        offset_x = 0.03
+                        offset_y = 0.03
 
-        if ch == "a":
-            # num = random.randint(1, 100)
-            # print("a - ", num)
-            # if num >= 70: 
-            #     offset_x = 0
-            #     offset_y = -0.03
-            # else: 
-            offset_x = 0
-            offset_y = -0.03
+                # req = random.randint(2, 4)
+                # rospy.loginfo(f"{freq}th move! Randomly changing direction'")
+            
+            elif ch == "a":
+                offset_x = 0
+                offset_y = -0.03
+                        
+            elif ch == "w":
+                offset_x = -0.03
+                offset_y = 0
 
-        elif ch == "w":
-            # num = random.randint(1, 100)
-            # print("w - ", num)
-            # if num >= 70: 
-            #     offset_x = 0.03
-            #     offset_y = 0
-            # else:
-            offset_x = -0.03
-            offset_y = 0
+            elif ch == "s":
+                offset_x = 0.03
+                offset_y = 0
 
-        elif ch == "s":
-            # num = random.randint(1, 100)
-            # print("s - ", num)
-            # if num >= 70:
-            #     offset_x = -0.03
-            #     offset_y = 0
-            # else:
-            offset_x = 0.03
-            offset_y = 0
-
-        elif ch == "d":
-            # num = random.randint(1, 100)
-            # print("d - ", num)
-            # if num >= 70:
-            #     offset_x = 0
-            #     offset_y = 0.03
-            # else:
-            offset_x = 0
-            offset_y = 0.03
-
-        # variables for 8 different diagonal directions
-        
-        elif ch == "j":
-            offset_x = -0.03
-            offset_y = -0.03
-
-        elif ch == "i":
-            offset_x = -0.03
-            offset_y = 0.03
-
-        elif ch == "k":
-            offset_x = 0.03
-            offset_y = 0.03
-
-        elif ch == "l":
-            offset_x = 0.03
-            offset_y = 0.03
-
-        elif ch == "b":
-            offset_x = 0.03
-            offset_y = -0.03
-
-        elif ch == "h":
-            offset_x = -0.03
-            offset_y = -0.03
-
-        elif ch == "n":
-            offset_x = 0.03
-            offset_y = -0.03
-
-        elif ch == "m":
-            offset_x = -0.03
-            offset_y = 0.03
+            elif ch == "d":
+                offset_x = 0
+                offset_y = 0.03
 
         elif ch == "c":
             try:
@@ -349,20 +270,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-# # ---- Gripper open ----
-# elif ch == "g":
-#     rospy.loginfo("Opening gripper (3 cm)...")
-#     goal = MoveGoal(width=0.03, speed=0.05)
-#     move_client.send_goal(goal)
-#     move_client.wait_for_result(rospy.Duration(5.0))
-#     rospy.loginfo("Gripper opened.")
-#     continue
-
-# ---- Gripper close (grasp) ----
-
-# 3rd move - 30% - B
-# 3rd move - 60% - B
-# 
