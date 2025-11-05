@@ -101,7 +101,7 @@ def main():
         if ch in ["w", "a", "s", "d"]:
             move_count += 1  # count each valid movement
 
-            perc = 50     
+            perc = 90     
 
             rand_freq = random.randint(1, 100)
 
