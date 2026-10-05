@@ -4,7 +4,7 @@ A Human-Robot Interaction (HRI) user study from Constructor University, Bremen.
 
 **Authors:** Mariam Machaidze, Amanuel Basaznew Legesse, Anuraag Deshpande, Dan Akai
 
-![Experiment setup](figures/setup.jpg)
+![Experiment setup](figures/HRI.png)
 
 ## Overview
 
